@@ -63,7 +63,17 @@ InsertRes InsertValue(Node *p, int key) {
 
     if (p->is_ternay) {
         if (key < p->ternary.key_[0]) {
-            if (p->ternary.kid_[0]) {
+            if (!p->ternary.kid_[0]) {
+                s.is_split = true;
+                auto content = *p;
+                s.split.left = CreateTernary(nullptr, key, nullptr, content.ternary.key_[0], nullptr);
+                s.split.right = p;
+                s.split.right->is_ternay = false;
+                s.split.right->binary.kid_[0] = nullptr;
+                s.split.right->binary.key_ = content.ternary.key_[1];
+                s.split.right->binary.kid_[1] = nullptr;
+                s.split.key = content.ternary.key_[0];
+            } else {
                 auto r = InsertValue(p->ternary.kid_[0], key);
                 if (r.is_split) {
                     s.is_split = true;
@@ -76,21 +86,21 @@ InsertRes InsertValue(Node *p, int key) {
                     s.split.right->binary.kid_[1] = content.ternary.kid_[2];
                     s.split.key = content.ternary.key_[0];
                 }
-            } else {
+            }
+        } else if (key == p->ternary.key_[0]) {
+            // nothing
+        } else if (key < p->ternary.key_[1]) {
+            if (!p->ternary.kid_[1]) {
                 s.is_split = true;
                 auto content = *p;
-                s.split.left = CreateTernary(nullptr, key, nullptr, content.ternary.key_[0], nullptr);
+                s.split.left = CreateTernary(nullptr, content.ternary.key_[0], nullptr, key, nullptr);
                 s.split.right = p;
                 s.split.right->is_ternay = false;
                 s.split.right->binary.kid_[0] = nullptr;
                 s.split.right->binary.key_ = content.ternary.key_[1];
                 s.split.right->binary.kid_[1] = nullptr;
-                s.split.key = content.ternary.key_[0];
-            }
-        } else if (key == p->ternary.key_[0]) {
-            // nothing
-        } else if (key < p->ternary.key_[1]) {
-            if (p->ternary.kid_[1]) {
+                s.split.key = key;
+            } else {
                 auto r = InsertValue(p->ternary.kid_[1], key);
                 if (r.is_split) {
                     s.is_split = true;
@@ -103,21 +113,21 @@ InsertRes InsertValue(Node *p, int key) {
                     s.split.right->binary.kid_[1] = content.ternary.kid_[2];
                     s.split.key = r.split.key;
                 }
-            } else {
-                s.is_split = true;
-                auto content = *p;
-                s.split.left = CreateTernary(nullptr, content.ternary.key_[0], nullptr, key, nullptr);
-                s.split.right = p;
-                s.split.right->is_ternay = false;
-                s.split.right->binary.kid_[0] = nullptr;
-                s.split.right->binary.key_ = content.ternary.key_[1];
-                s.split.right->binary.kid_[1] = nullptr;
-                s.split.key = key;
             }
         } else if (key == p->ternary.key_[1]) {
             // nothing
         } else {
-            if (p->ternary.kid_[2]) {
+            if (!p->ternary.kid_[2]) {
+                s.is_split = true;
+                auto content = *p;
+                s.split.left = CreateTernary(nullptr, content.ternary.key_[0], nullptr, content.ternary.key_[1], nullptr);
+                s.split.right = p;
+                s.split.right->is_ternay = false;
+                s.split.right->binary.kid_[0] = nullptr;
+                s.split.right->binary.key_ = key;
+                s.split.right->binary.kid_[1] = nullptr;
+                s.split.key = content.ternary.key_[1];
+            } else {
                 auto r = InsertValue(p->ternary.kid_[2], key);
                 if (r.is_split) {
                     s.is_split = true;
@@ -130,16 +140,6 @@ InsertRes InsertValue(Node *p, int key) {
                     s.split.right = CreateBinary(r.split.left, r.split.key, r.split.right);
                     s.split.key = content.ternary.key_[1];
                 }
-            } else {
-                s.is_split = true;
-                auto content = *p;
-                s.split.left = CreateTernary(nullptr, content.ternary.key_[0], nullptr, content.ternary.key_[1], nullptr);
-                s.split.right = p;
-                s.split.right->is_ternay = false;
-                s.split.right->binary.kid_[0] = nullptr;
-                s.split.right->binary.key_ = key;
-                s.split.right->binary.kid_[1] = nullptr;
-                s.split.key = content.ternary.key_[1];
             }
         }
     } else {
