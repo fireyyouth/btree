@@ -49,7 +49,7 @@ struct InsertRes {
     bool is_split;
 };
 
-InsertRes InsertValue(Node *p, int key) {
+InsertRes InsertValue(Node *p, int key, bool plus) {
     InsertRes s;
     s.is_split = false;
 
@@ -63,7 +63,7 @@ InsertRes InsertValue(Node *p, int key) {
 
     if (p->is_ternay) {
         if (key < p->ternary.key_[0]) {
-            if (!p->ternary.kid_[0]) {
+            if (plus && !p->ternary.kid_[0]) {
                 s.is_split = true;
                 auto content = *p;
                 s.split.left = CreateTernary(nullptr, key, nullptr, content.ternary.key_[0], nullptr);
@@ -74,7 +74,7 @@ InsertRes InsertValue(Node *p, int key) {
                 s.split.right->binary.kid_[1] = nullptr;
                 s.split.key = content.ternary.key_[0];
             } else {
-                auto r = InsertValue(p->ternary.kid_[0], key);
+                auto r = InsertValue(p->ternary.kid_[0], key, plus);
                 if (r.is_split) {
                     s.is_split = true;
                     auto content = *p;
@@ -90,7 +90,7 @@ InsertRes InsertValue(Node *p, int key) {
         } else if (key == p->ternary.key_[0]) {
             // nothing
         } else if (key < p->ternary.key_[1]) {
-            if (!p->ternary.kid_[1]) {
+            if (plus && !p->ternary.kid_[1]) {
                 s.is_split = true;
                 auto content = *p;
                 s.split.left = CreateTernary(nullptr, content.ternary.key_[0], nullptr, key, nullptr);
@@ -101,7 +101,7 @@ InsertRes InsertValue(Node *p, int key) {
                 s.split.right->binary.kid_[1] = nullptr;
                 s.split.key = key;
             } else {
-                auto r = InsertValue(p->ternary.kid_[1], key);
+                auto r = InsertValue(p->ternary.kid_[1], key, plus);
                 if (r.is_split) {
                     s.is_split = true;
                     auto content = *p;
@@ -117,7 +117,7 @@ InsertRes InsertValue(Node *p, int key) {
         } else if (key == p->ternary.key_[1]) {
             // nothing
         } else {
-            if (!p->ternary.kid_[2]) {
+            if (plus && !p->ternary.kid_[2]) {
                 s.is_split = true;
                 auto content = *p;
                 s.split.left = CreateTernary(nullptr, content.ternary.key_[0], nullptr, content.ternary.key_[1], nullptr);
@@ -128,7 +128,7 @@ InsertRes InsertValue(Node *p, int key) {
                 s.split.right->binary.kid_[1] = nullptr;
                 s.split.key = content.ternary.key_[1];
             } else {
-                auto r = InsertValue(p->ternary.kid_[2], key);
+                auto r = InsertValue(p->ternary.kid_[2], key, plus);
                 if (r.is_split) {
                     s.is_split = true;
                     auto content = *p;
@@ -144,22 +144,20 @@ InsertRes InsertValue(Node *p, int key) {
         }
     } else {
         if (key < p->binary.key_) {
-            if (p->binary.kid_[0]) {
-                auto r = InsertValue(p->binary.kid_[0], key);
-                if (r.is_split) {
-                    auto content = *p;
-                    p->is_ternay = true;
-                    p->ternary.kid_[0] = r.split.left;
-                    p->ternary.key_[0] = r.split.key;
-                    p->ternary.kid_[1] = r.split.right;
-                    p->ternary.key_[1] = content.binary.key_;
-                    p->ternary.kid_[2] = content.binary.kid_[1];
-                }
+            auto r = InsertValue(p->binary.kid_[0], key, plus);
+            if (r.is_split) {
+                auto content = *p;
+                p->is_ternay = true;
+                p->ternary.kid_[0] = r.split.left;
+                p->ternary.key_[0] = r.split.key;
+                p->ternary.kid_[1] = r.split.right;
+                p->ternary.key_[1] = content.binary.key_;
+                p->ternary.kid_[2] = content.binary.kid_[1];
             }
         } else if (key == p->binary.key_) {
             // nothing
         } else {
-            auto r = InsertValue(p->binary.kid_[1], key);
+            auto r = InsertValue(p->binary.kid_[1], key, plus);
             if (r.is_split) {
                 auto content = *p;
                 p->is_ternay = true;
@@ -198,8 +196,10 @@ void PrintEdges(Node *p) {
 
 struct BTree {
     Node *root_;
+    bool plus_;
+
     void Insert(int key) {
-        auto r = InsertValue(root_, key);
+        auto r = InsertValue(root_, key, plus_);
         if (r.is_split) {
             root_ = CreateBinary(r.split.left, r.split.key, r.split.right);
         }
@@ -211,7 +211,7 @@ struct BTree {
         printf("}\n");
     }
 
-    BTree() : root_(nullptr) {}
+    BTree(bool plus) : root_(nullptr), plus_(plus) {}
 };
 
 #include <string>
@@ -221,9 +221,13 @@ int main(int argc, char **argv) {
     if (argc > 1) {
         num = std::stoi(argv[1]);
     }
-    BTree t;
-    for (int i = 0; i < num; ++i) {
+
+    BTree t(false);
+    BTree s(true);
+    for (int i = num - 1; i >= 0; --i) {
         t.Insert(i);
+        s.Insert(i);
     }
     t.Dump();
+    s.Dump();
 }
